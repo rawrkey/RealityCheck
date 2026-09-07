@@ -1,10 +1,79 @@
+import type {
+  CallRecord,
+  CallSummary,
+  EvidenceItem,
+  Transcript,
+} from './types'
+
 export const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000'
 
-export async function checkHealth(): Promise<{ status: string }> {
-  const res = await fetch(`${API_BASE_URL}/health`)
+async function handle<T>(res: Response): Promise<T> {
   if (!res.ok) {
-    throw new Error(`Health check failed with status ${res.status}`)
+    let detail = `Request failed with status ${res.status}`
+    try {
+      const body = await res.json()
+      if (typeof body?.detail === 'string') {
+        detail = body.detail
+      } else if (Array.isArray(body?.detail)) {
+        detail = (body.detail as { msg?: string }[])
+          .map((item) => item.msg ?? '')
+          .filter(Boolean)
+          .join('; ')
+      }
+    } catch {
+      // ignore non-JSON error bodies
+    }
+    throw new Error(detail)
   }
-  return res.json()
+  return res.json() as Promise<T>
+}
+
+export async function checkHealth(): Promise<{ status: string }> {
+  return handle<{ status: string }>(await fetch(`${API_BASE_URL}/health`))
+}
+
+export async function uploadCall(file: File): Promise<CallRecord> {
+  const form = new FormData()
+  form.append('file', file)
+  const res = await fetch(`${API_BASE_URL}/api/calls`, {
+    method: 'POST',
+    body: form,
+  })
+  return handle<CallRecord>(res)
+}
+
+export async function listCalls(): Promise<CallSummary[]> {
+  return handle<CallSummary[]>(await fetch(`${API_BASE_URL}/api/calls`))
+}
+
+export async function getCall(callId: string): Promise<CallRecord> {
+  return handle<CallRecord>(await fetch(`${API_BASE_URL}/api/calls/${callId}`))
+}
+
+export async function getTranscript(callId: string): Promise<Transcript> {
+  return handle<Transcript>(
+    await fetch(`${API_BASE_URL}/api/calls/${callId}/transcript`),
+  )
+}
+
+export type EvidenceParams = {
+  query?: string
+  analysis_item_id?: string
+  utterance_id?: string
+  utterance_ids?: string[]
+}
+
+export async function getEvidence(
+  callId: string,
+  params: EvidenceParams,
+): Promise<EvidenceItem[]> {
+  const search = new URLSearchParams()
+  if (params.query) search.set('query', params.query)
+  if (params.analysis_item_id) search.set('analysis_item_id', params.analysis_item_id)
+  if (params.utterance_id) search.set('utterance_id', params.utterance_id)
+  if (params.utterance_ids?.length) search.set('utterance_ids', params.utterance_ids.join(','))
+  const qs = search.toString()
+  const url = `${API_BASE_URL}/api/calls/${callId}/evidence${qs ? `?${qs}` : ''}`
+  return handle<EvidenceItem[]>(await fetch(url))
 }

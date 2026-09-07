@@ -1,6 +1,13 @@
-"""Placeholder for ground-truth analysis and AI interrogation logic.
+"""Ground-truth analysis service.
 
-PLANNED / NOT IMPLEMENTED.
-Phase 2 will add the pipeline that analyzes transcripts, challenges the rep's
-interpretation, and produces the Deal Reality view.
+PLANNED → IMPLEMENTED in Phase 2: extracts factual signals from a transcript
+via the AssemblyAI LLM Gateway with structured output.
 """
+
+from server.services.analysis.service import AnalysisError, analyze_transcript, normalize_analysis
+
+__all__ = [
+    "AnalysisError",
+    "analyze_transcript",
+    "normalize_analysis",
+]

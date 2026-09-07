@@ -7,7 +7,7 @@ export function Header() {
         <Logo />
         <nav className="text-sm text-slate-400">
           <span className="rounded-full border border-slate-700 px-3 py-1 text-xs text-slate-300">
-            Phase 1 · Shell
+            Ground Truth · Phase 2
           </span>
         </nav>
       </div>

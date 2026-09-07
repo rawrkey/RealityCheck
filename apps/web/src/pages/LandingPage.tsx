@@ -1,7 +1,11 @@
 import { Header } from '../components/Header'
 import { CtaButton } from '../components/CtaButton'
 
-export default function LandingPage() {
+type LandingPageProps = {
+  onStartDemo: () => void
+}
+
+export default function LandingPage({ onStartDemo }: LandingPageProps) {
   return (
     <>
       <Header />
@@ -17,7 +21,7 @@ export default function LandingPage() {
           they're right.
         </p>
         <div className="mt-10">
-          <CtaButton />
+          <CtaButton onClick={onStartDemo} />
         </div>
       </main>
     </>

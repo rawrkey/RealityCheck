@@ -44,3 +44,4 @@ data/*
 data/demo/*.wav
 data/demo/*.mp3
 data/demo/*.m4a
+data/demo/calls/
