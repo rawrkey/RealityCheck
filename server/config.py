@@ -15,6 +15,10 @@ class Settings(BaseSettings):
     assemblyai_llm_base_url: str = "https://llm-gateway.assemblyai.com/v1"
     assemblyai_llm_max_tokens: int = 6000
 
+    voice_agent_base_url: str = "https://agents.assemblyai.com"
+    voice_agent_ws_url: str = "wss://agents.assemblyai.com/voice-agent"
+    voice_agent_token_ttl_seconds: int = 300
+
     call_storage_dir: str = "data/demo/calls"
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")

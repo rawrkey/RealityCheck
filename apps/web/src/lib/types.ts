@@ -186,3 +186,95 @@ export interface CallSummary {
   status: CallStatus
   error_message: string | null
 }
+
+// ---- Phase 3: Voice Interrogation + Deal Reality ----
+
+export type InterrogationDimension =
+  | 'primary_objection'
+  | 'buyer_decision_maker'
+  | 'deal_interest_risk'
+  | 'next_step'
+
+export type InterrogationRole = 'agent' | 'rep'
+export type InterrogationStatus = 'created' | 'in_progress' | 'completed'
+export type AlignmentVerdict = 'aligned' | 'misaligned' | 'unsupported'
+export type DealRiskLevel = 'low' | 'medium' | 'high'
+export type Priority = 'high' | 'medium' | 'low'
+
+export interface InterrogationMessage {
+  role: InterrogationRole
+  text: string
+}
+
+export interface RepClaim {
+  id: string
+  dimension: InterrogationDimension
+  question: string
+  claim: string
+  rep_confidence: number
+  evidence_utterance_ids: string[]
+}
+
+export interface InterrogationSession {
+  id: string
+  call_id: string
+  status: InterrogationStatus
+  dimensions: InterrogationDimension[]
+  system_prompt: string
+  messages: InterrogationMessage[]
+  claims: RepClaim[]
+  debrief_transcript: Transcript | null
+  created_at: string
+  updated_at: string
+}
+
+export interface ClaimAlignment {
+  claim_id: string
+  dimension: InterrogationDimension
+  verdict: AlignmentVerdict
+  summary: string
+  transcript_evidence: EvidenceItem[]
+  matched_analysis_ids: string[]
+}
+
+export interface BlindSpot {
+  id: string
+  dimension: InterrogationDimension | null
+  title: string
+  description: string
+  transcript_evidence: EvidenceItem[]
+}
+
+export interface RecommendedAction {
+  id: string
+  priority: Priority
+  action: string
+  rationale: string
+}
+
+export interface DealReality {
+  call_id: string
+  prompt_version: string
+  summary: string
+  risk_level: DealRiskLevel
+  alignment_score: number
+  aligned_count: number
+  total_count: number
+  blind_spots: BlindSpot[]
+  recommendations: RecommendedAction[]
+  created_at: string
+}
+
+export interface InterrogationConfig {
+  call_id: string
+  token: string
+  websocket_url: string
+  session: Record<string, unknown>
+  expires_in_seconds: number
+}
+
+export interface DebriefResponse {
+  call_id: string
+  session: InterrogationSession
+  alignments: ClaimAlignment[]
+}

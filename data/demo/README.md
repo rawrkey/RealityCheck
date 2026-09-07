@@ -1,8 +1,8 @@
 # Demo Data
 
 This folder contains sample sales-call material for local development of the
-RealityCheck pipeline: **Ground Truth Analysis** → **Evidence** → (later)
-**Voice Interrogation** → **Deal Reality**.
+RealityCheck pipeline: **Ground Truth Analysis** → **Evidence** → **Voice
+Interrogation** → **Deal Reality**.
 
 ## Providing a demo audio file
 
@@ -21,6 +21,20 @@ To run a real demo end-to-end:
    - `GET /api/calls` — list calls
    - `GET /api/calls/{id}` — full transcript + analysis
    - `GET /api/calls/{id}/evidence?query=security` — evidence search
+
+## Debriefing the rep (Phase 3)
+
+After the call is processed, run the interrogation from the UI
+(**Run voice interrogation →** on the call, or `#/calls/{id}/debrief`):
+
+- With `ASSEMBLYAI_API_KEY` set, the browser connects a live **AssemblyAI Voice
+  Agent**, streams the rep's mic audio, and relays `retrieve_evidence` tool
+  calls to `POST /api/calls/{id}/interrogation/tool`.
+- Without a key, the app falls back to a **manual debrief** form (type the
+  rep's answers); claim extraction and Deal Reality use deterministic
+  fallbacks, so the whole flow still runs end-to-end.
+
+The output lives under `#/calls/{id}/reality`.
 
 ## Notes / security
 

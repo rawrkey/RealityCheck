@@ -40,6 +40,20 @@ export default function CallWorkspace({ onBack }: CallWorkspaceProps) {
 
             {ready && call.transcript && call.analysis && (
               <>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <h2 className="text-sm font-semibold text-white">
+                    Original call — transcript &amp; ground truth
+                  </h2>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      window.location.hash = `#/calls/${call.id}/debrief`
+                    }}
+                    className="rounded-lg bg-indigo-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-400"
+                  >
+                    Run voice interrogation →
+                  </button>
+                </div>
                 <TranscriptView callId={call.id} transcript={call.transcript} />
                 <GroundTruthView callId={call.id} analysis={call.analysis} />
               </>

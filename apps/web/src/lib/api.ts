@@ -1,7 +1,13 @@
 import type {
   CallRecord,
   CallSummary,
+  ClaimAlignment,
+  DebriefResponse,
+  DealReality,
   EvidenceItem,
+  InterrogationConfig,
+  InterrogationSession,
+  InterrogationMessage,
   Transcript,
 } from './types'
 
@@ -76,4 +82,77 @@ export async function getEvidence(
   const qs = search.toString()
   const url = `${API_BASE_URL}/api/calls/${callId}/evidence${qs ? `?${qs}` : ''}`
   return handle<EvidenceItem[]>(await fetch(url))
+}
+
+// ---- Phase 3: Voice Interrogation + Deal Reality ----
+
+export async function startInterrogation(callId: string): Promise<InterrogationSession> {
+  return handle<InterrogationSession>(
+    await fetch(`${API_BASE_URL}/api/calls/${callId}/interrogation/session`, {
+      method: 'POST',
+    }),
+  )
+}
+
+export async function getInterrogationSession(callId: string): Promise<InterrogationSession> {
+  return handle<InterrogationSession>(
+    await fetch(`${API_BASE_URL}/api/calls/${callId}/interrogation/session`),
+  )
+}
+
+export async function submitDebrief(
+  callId: string,
+  messages: InterrogationMessage[],
+): Promise<DebriefResponse> {
+  const res = await fetch(`${API_BASE_URL}/api/calls/${callId}/interrogation/debrief`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ messages }),
+  })
+  return handle<DebriefResponse>(res)
+}
+
+export async function getDebrief(callId: string): Promise<DebriefResponse> {
+  return handle<DebriefResponse>(await fetch(`${API_BASE_URL}/api/calls/${callId}/debrief`))
+}
+
+export async function getAlignments(callId: string): Promise<ClaimAlignment[]> {
+  return handle<ClaimAlignment[]>(
+    await fetch(`${API_BASE_URL}/api/calls/${callId}/interrogation/alignment`),
+  )
+}
+
+export async function getReality(callId: string): Promise<DealReality> {
+  return handle<DealReality>(await fetch(`${API_BASE_URL}/api/calls/${callId}/reality`))
+}
+
+export async function buildReality(callId: string): Promise<DealReality> {
+  return handle<DealReality>(
+    await fetch(`${API_BASE_URL}/api/calls/${callId}/interrogation/reality`, {
+      method: 'POST',
+    }),
+  )
+}
+
+export async function getInterrogationConfig(callId: string): Promise<InterrogationConfig> {
+  return handle<InterrogationConfig>(
+    await fetch(`${API_BASE_URL}/api/calls/${callId}/interrogation/config`),
+  )
+}
+
+export type ToolCall = {
+  name: string
+  arguments: Record<string, unknown>
+}
+
+export async function executeVoiceTool(
+  callId: string,
+  toolCall: ToolCall,
+): Promise<{ result: string }> {
+  const res = await fetch(`${API_BASE_URL}/api/calls/${callId}/interrogation/tool`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(toolCall),
+  })
+  return handle<{ result: string }>(res)
 }
