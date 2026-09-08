@@ -4,7 +4,9 @@ import logging
 from pathlib import Path
 
 from fastapi import APIRouter, File, HTTPException, UploadFile
+from pydantic import BaseModel, Field
 
+from server.config import settings
 from server.services.calls import pipeline
 from server.services.evidence import search_evidence
 from server.services.sample_call import ensure_sample_call
@@ -16,6 +18,15 @@ from shared.schemas.transcript import Transcript
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/calls", tags=["calls"])
+
+
+class ProviderStatus(BaseModel):
+    """Capability probe for the live provider pipeline (no secret details)."""
+
+    live_analysis_available: bool
+    voice_available: bool
+    mode: str = Field(description="Either 'live' or 'sample'.")
+    label: str = Field(description="Short, UI-ready status label.")
 
 ALLOWED_AUDIO_EXTENSIONS = {
     ".wav",
@@ -47,6 +58,24 @@ def upload_call(file: UploadFile | None = File(None)) -> CallRecord:
 def list_calls() -> list[CallSummary]:
     """List processed calls (lightweight metadata)."""
     return get_call_store().list_calls()
+
+
+@router.get("/provider-status", response_model=ProviderStatus)
+def provider_status() -> ProviderStatus:
+    """Report whether a live provider pipeline is available.
+
+    Live transcription/analysis/voice all depend on a server-side
+    AssemblyAI API key. This is a pure capability probe (no secrets, no token
+    minting) so the UI can honestly show "live analysis" vs "sample mode"
+    without leaking configuration details.
+    """
+    available = bool(settings.assemblyai_api_key)
+    return ProviderStatus(
+        live_analysis_available=available,
+        voice_available=available,
+        mode="live" if available else "sample",
+        label="Live analysis available" if available else "Sample mode",
+    )
 
 
 @router.post("/demo", response_model=CallRecord)

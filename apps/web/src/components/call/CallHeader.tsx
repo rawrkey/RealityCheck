@@ -3,8 +3,8 @@ import { StatusPill } from './StatusPill'
 import { CallTabs } from './CallTabs'
 import type { CallSection } from './CallTabs'
 import { ButtonLink } from '../ui'
-import { isSampleCall } from '../../lib/api'
 import { formatDate, formatDuration } from '../../lib/ui'
+import { cx } from '../../lib/cx'
 
 type CallHeaderProps = {
   call: CallRecord
@@ -37,11 +37,16 @@ export function CallHeader({ call, section, onBack }: CallHeaderProps) {
               <h1 className="truncate font-mono text-sm font-medium text-ink">
                 {call.original_filename}
               </h1>
-              {isSampleCall(call.id) && (
-                <span className="inline-flex items-center rounded-full border border-rule-strong bg-panel px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-subtle">
-                  Sample
-                </span>
-              )}
+              <span
+                className={cx(
+                  'inline-flex items-center rounded-full border px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider',
+                  call.source === 'sample'
+                    ? 'border-info/30 bg-info/[0.06] text-info'
+                    : 'border-rule-strong bg-panel text-subtle',
+                )}
+              >
+                {call.source === 'sample' ? 'Sample' : 'Live analysis'}
+              </span>
               <StatusPill status={call.status} />
             </div>
             <p className="mt-0.5 text-[11px] text-subtle">

@@ -12,6 +12,28 @@ from shared.schemas.transcript import Speaker, Transcript, Utterance
 
 logger = logging.getLogger(__name__)
 
+# Ordered model list: Universal-3.5 Pro handles its supported languages; the
+# API falls back to Universal-2 for anything outside that set (the documented,
+# recommended arrangement for pre-recorded transcription).
+SPEECH_MODELS = ["universal-3-5-pro", "universal-2"]
+
+# Concise contextual description of the audio (Universal-3.5 Pro supports a
+# single natural-language `prompt` that is not formatting/behavioral).
+TRANSCRIPT_PROMPT = (
+    "A B2B SaaS sales call between a sales representative and a prospective "
+    "buyer discussing needs, budget, security sign-off, and next steps."
+)
+
+# Small domain-vocabulary boost for terms that appear in B2B sales calls. Kept
+# deliberately short (well under the platform limits) to avoid noise.
+KEYTERMS_PROMPT = [
+    "security sign-off",
+    "procurement",
+    "proof of concept",
+    "decision maker",
+    "implementation timeline",
+]
+
 
 class AssemblyAIServiceError(Exception):
     """Raised when speech-to-text fails. Message is safe for clients."""
@@ -71,8 +93,11 @@ def transcribe_audio(data: bytes) -> Transcript:
         transcriber = aai.Transcriber()
         upload_url = transcriber.upload_file(data)
         config = aai.TranscriptionConfig(
+            speech_models=SPEECH_MODELS,
             speaker_labels=True,
             language_detection=True,
+            prompt=TRANSCRIPT_PROMPT,
+            keyterms_prompt=KEYTERMS_PROMPT,
         )
         result = transcriber.transcribe(upload_url, config=config)
     except AssemblyAIServiceError:

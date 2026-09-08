@@ -21,7 +21,7 @@ from shared.schemas.analysis import (
     StakeholderInsight,
     TimelineSignal,
 )
-from shared.schemas.call import CallRecord, CallStatus
+from shared.schemas.call import CallRecord, CallSource, CallStatus
 from shared.schemas.transcript import Speaker, Transcript, Utterance
 
 SAMPLE_CALL_ID = "demo-nova-onboarding"
@@ -260,6 +260,12 @@ def ensure_sample_call(store: CallStore) -> CallRecord:
     """Return the persisted sample call, seeding it on first use (idempotent)."""
     existing = store.load_call(SAMPLE_CALL_ID)
     if existing is not None:
+        # Self-heal records persisted before source labeling existed (or any
+        # stale record keyed to the sample id): the sample must never read as
+        # a real uploaded call.
+        if existing.source != CallSource.sample:
+            existing.source = CallSource.sample
+            store.save_call(existing)
         return existing
 
     transcript = build_sample_transcript()
@@ -269,6 +275,7 @@ def ensure_sample_call(store: CallStore) -> CallRecord:
         original_filename=SAMPLE_FILENAME,
         created_at=datetime.now(timezone.utc),
         status=CallStatus.ready,
+        source=CallSource.sample,
         transcript=transcript,
         analysis=analysis,
     )

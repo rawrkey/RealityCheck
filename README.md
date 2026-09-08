@@ -15,13 +15,22 @@ and recommended next actions.
 
 ## Current Status
 
-**Phase 3 — Voice Interrogation & Deal Reality.** The backend can upload a
-sales-call audio file, transcribe it with speaker labels (AssemblyAI), run
-ground-truth analysis (AssemblyAI LLM Gateway, structured output), and expose
-searchable transcript evidence. A rep can now be debriefed after the call by a
-live AssemblyAI Voice Agent (or manually in key-less demo mode); their claims
-are extracted and aligned against the transcript evidence, and a **Deal
-Reality** dashboard shows risk, blind spots, and recommended next actions.
+**Phase 5C — Live provider path + guaranteed demo.** RealityCheck ships with
+**two valid paths**:
+
+- **Path A — Instant demo (no API key).** A bundled, deterministic sample call
+  (`demo-nova-onboarding`) renders instantly: Transcript → Ground Truth →
+  Debrief → Deal Reality. This works with zero external dependencies and is the
+  guaranteed presentation path.
+- **Path B — Live analysis (API key).** A real upload is transcribed with
+  AssemblyAI (speech models `universal-3-5-pro` → `universal-2`, speaker
+  labels), analyzed by the AssemblyAI LLM Gateway (`gemini-2.5-flash-lite`,
+  with a cross-provider fallback), and flows through Ground Truth → Voice
+  Debrief → Deal Reality exactly like the sample.
+
+Both paths share the same domain schema, evidence linking, debrief, and Deal
+Reality pipeline. The sample is always labeled **Sample**; real uploads are
+labeled **Live analysis**.
 
 ## Tech Stack
 
@@ -104,26 +113,47 @@ npm run dev
 
 The app runs at <http://localhost:5173>.
 
-## Running a Demo Call
+## Two Ways to Use RealityCheck
 
-1. Put a short recorded sales call at `data/demo/recorded_call.mp3`
-   (wav/mp3/m4a/aac/flac/ogg all supported).
-2. Ensure `ASSEMBLYAI_API_KEY` is in `.env`.
-3. Start the backend, then upload from the UI, or:
-   ```bash
-   curl -X POST http://localhost:8000/api/calls \
-     -F "file=@data/demo/recorded_call.mp3"
-   ```
-4. Read the result:
-   - `GET /api/calls` — list
-   - `GET /api/calls/{id}` — transcript + analysis
-   - `GET /api/calls/{id}/evidence?query=security` — evidence search
+### Quick Demo (no API key required)
+
+The bundled sample call is deterministic local data — it needs no AssemblyAI
+key, no network, no microphone, and no upload.
+
+1. Start the backend and frontend (above).
+2. On the landing page click **Start Demo** (or, on the Calls page, **Load
+   sample call**).
+3. Click through the sample's **Transcript → Ground Truth → Debrief → Deal
+   Reality**. The call is labeled **Sample** and the Calls page shows
+   **Sample mode** until a key is configured.
+
+### Live Analysis (requires `ASSEMBLYAI_API_KEY`)
+
+This path proves the real provider pipeline: upload → AssemblyAI transcription
+→ LLM Gateway analysis → Ground Truth → Debrief → Deal Reality.
+
+1. Put `ASSEMBLYAI_API_KEY` in `.env`.
+2. Start the backend and frontend.
+3. On the Calls page click **Analyze a call** and pick a recorded call
+   (wav/mp3/m4a/mp4/mov/aac/flac/ogg/webm/wma). The Calls page shows
+   **Live analysis available** when a key is configured.
+4. The upload is transcribed (`universal-3-5-pro` → `universal-2`, speaker
+   labels), analyzed by the LLM Gateway (`gemini-2.5-flash-lite` by default),
+   and the call is labeled **Live analysis**.
+5. Run the debrief (voice or typed) and open **Deal Reality**.
+
+> The sample demo never touches the provider pipeline and never disables it:
+> both paths work side by side. Live analysis needs the AssemblyAI account's
+> plan to include LLM Gateway model inference (transcription and Voice Agent
+> are included with a standard key; Gateway inference can be plan-gated). If
+> Analysis is denied, the upload fails honestly with `status=failed` and a
+> client-safe `error_message` — it is never faked or silently downgraded.
 
 ### Running the debrief (Phase 3)
 
 Once a processed call is ready:
 
-1. From the UI, open the call and click **Run voice interrogation →** (or open
+1. From the UI, open the call and click **Start Debrief →** (or open
    `#/calls/{id}/debrief`).
 2. If `ASSEMBLYAI_API_KEY` is set, the browser connects a live **AssemblyAI
    Voice Agent** WebSocket, streams the mic, relays `retrieve_evidence` tool
@@ -144,6 +174,8 @@ and tool contract.
 | GET | `/health` | Liveness probe |
 | POST | `/api/calls` | Upload + process a call (multipart `file`) |
 | GET | `/api/calls` | List calls (lightweight) |
+| GET | `/api/calls/provider-status` | Live-provider capability probe (no secrets) |
+| POST | `/api/calls/demo` | Seed the deterministic sample call (idempotent) |
 | GET | `/api/calls/{id}` | Full processed call |
 | GET | `/api/calls/{id}/transcript` | Normalized transcript |
 | GET | `/api/calls/{id}/evidence` | Evidence by `query` / `analysis_item_id` / `utterance_id` |
@@ -166,9 +198,10 @@ and edit as needed. **Never commit real API keys.**
 | --- | --- | --- |
 | `PORT` | Backend | Port the API listens on (default 8000) |
 | `CORS_ORIGINS` | Backend | Allowed frontend origins, comma-separated |
-| `ASSEMBLYAI_API_KEY` | Backend | Speech-to-text + LLM Gateway + Voice Agent auth |
+| `ASSEMBLYAI_API_KEY` | Backend | Speech-to-text + LLM Gateway + Voice Agent auth. **Required only for Live Analysis / voice.** Without it the app runs in sample mode. |
 | `ASSEMBLYAI_BASE_URL` | Backend | Speech-to-text base URL |
 | `ASSEMBLYAI_LLM_MODEL` | Backend | Model for analysis (default `gemini-2.5-flash-lite`) |
+| `ASSEMBLYAI_LLM_FALLBACK_MODEL` | Backend | Cross-provider fallback (default `claude-sonnet-4-6`; empty disables) |
 | `ASSEMBLYAI_LLM_BASE_URL` | Backend | LLM Gateway base URL |
 | `ASSEMBLYAI_LLM_MAX_TOKENS` | Backend | Analysis max output tokens |
 | `VOICE_AGENT_BASE_URL` | Backend | Voice Agent token minting base URL |
@@ -191,10 +224,16 @@ npm run build      # type-check + production build
 npm run lint       # lint with oxlint
 ```
 
-## Future Implementation Phases
+## Phase Status
 
-- **Phase 4:** Authentication and end-to-end demo workflows.
+- **Phases 1–3:** Upload → transcription → ground truth → debrief → Deal
+  Reality (voice + typed), evidence linking.
+- **Phase 4:** Call detail UI (transcript, ground truth, evidence).
+- **Phase 5A/5B:** accessibility/honesty hardening; deterministic demo call.
+- **Phase 5C:** real live-analysis path (LLM Gateway model config, cross-provider
+  fallback, explicit speech models) alongside the keyless sample demo.
+- **Next:** Phase 6 demo engineering.
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full pipeline design
-and [docs/INTERROGATION.md](docs/INTERROGATION.md) for the Phase 3 Voice
-Agent protocol and tool contract.
+and [docs/INTERROGATION.md](docs/INTERROGATION.md) for the Voice Agent
+protocol and tool contract.

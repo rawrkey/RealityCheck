@@ -10,7 +10,7 @@ from pathlib import Path
 
 from pydantic import ValidationError
 
-from shared.schemas.call import CallRecord, CallSummary
+from shared.schemas.call import CallRecord, CallSource, CallSummary
 from shared.schemas.interrogation import DealReality, InterrogationSession
 
 logger = logging.getLogger(__name__)
@@ -130,6 +130,7 @@ class CallStore:
                     original_filename=call.original_filename,
                     created_at=call.created_at,
                     status=call.status,
+                    source=call.source,
                     error_message=call.error_message,
                 )
             )

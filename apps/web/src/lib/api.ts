@@ -9,6 +9,7 @@ import type {
   InterrogationSession,
   InterrogationMessage,
   Transcript,
+  ProviderStatus,
   VoiceAvailability,
 } from './types'
 
@@ -57,6 +58,13 @@ export async function uploadCall(file: File): Promise<CallRecord> {
 
 export async function listCalls(): Promise<CallSummary[]> {
   return handle<CallSummary[]>(await fetch(`${API_BASE_URL}/api/calls`))
+}
+
+/** Probe live-provider availability (transcription/analysis/voice). */
+export async function getProviderStatus(): Promise<ProviderStatus> {
+  return handle<ProviderStatus>(
+    await fetch(`${API_BASE_URL}/api/calls/provider-status`),
+  )
 }
 
 /** Seed the deterministic demo call and return it as the current call. */

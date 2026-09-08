@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     assemblyai_api_key: str | None = None
     assemblyai_base_url: str = "https://api.assemblyai.com"
     assemblyai_llm_model: str = "gemini-2.5-flash-lite"
+    assemblyai_llm_fallback_model: str = "claude-sonnet-4-6"
     assemblyai_llm_base_url: str = "https://llm-gateway.assemblyai.com/v1"
     assemblyai_llm_max_tokens: int = 6000
 

@@ -2,6 +2,8 @@ export type Speaker = 'SPEAKER_A' | 'SPEAKER_B' | 'SPEAKER_C' | 'SPEAKER_D'
 
 export type CallStatus = 'uploaded' | 'transcribing' | 'analyzing' | 'ready' | 'failed'
 
+export type CallSource = 'sample' | 'upload'
+
 export type ConfidenceLevel = 'low' | 'medium' | 'high' | 'unknown'
 
 export type Sentiment = 'positive' | 'negative' | 'neutral'
@@ -174,6 +176,7 @@ export interface CallRecord {
   original_filename: string
   created_at: string
   status: CallStatus
+  source: CallSource
   transcript: Transcript | null
   analysis: GroundTruthAnalysis | null
   error_message: string | null
@@ -189,7 +192,15 @@ export interface CallSummary {
   original_filename: string
   created_at: string
   status: CallStatus
+  source: CallSource
   error_message: string | null
+}
+
+export interface ProviderStatus {
+  live_analysis_available: boolean
+  voice_available: boolean
+  mode: 'live' | 'sample'
+  label: string
 }
 
 // ---- Phase 3: Voice Interrogation + Deal Reality ----

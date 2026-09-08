@@ -4,8 +4,13 @@ import { StatusPill } from '../components/call/StatusPill'
 import { Button, Dot, Elapsed, Eyebrow, Panel } from '../components/ui'
 import { cx } from '../lib/cx'
 import { navigate } from '../lib/router'
-import { isSampleCall, listCalls } from '../lib/api'
-import type { CallRecord, CallSummary } from '../lib/types'
+import { getProviderStatus, listCalls } from '../lib/api'
+import type {
+  CallRecord,
+  CallSource,
+  CallSummary,
+  ProviderStatus,
+} from '../lib/types'
 import { callStatusMeta, formatDate } from '../lib/ui'
 
 function toSummary(call: CallRecord): CallSummary {
@@ -14,14 +19,22 @@ function toSummary(call: CallRecord): CallSummary {
     original_filename: call.original_filename,
     created_at: call.created_at,
     status: call.status,
+    source: call.source,
     error_message: call.error_message,
   }
 }
 
-function SampleBadge() {
+function SourceBadge({ source }: { source: CallSource }) {
+  if (source === 'sample') {
+    return (
+      <span className="inline-flex items-center rounded-full border border-info/30 bg-info/[0.06] px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-info">
+        Sample
+      </span>
+    )
+  }
   return (
     <span className="inline-flex items-center rounded-full border border-rule-strong bg-panel px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-subtle">
-      Sample
+      Live analysis
     </span>
   )
 }
@@ -42,6 +55,21 @@ export default function CallWorkspace({ onBack, onStartDemo }: CallWorkspaceProp
   } | null>(null)
   const [demoBusy, setDemoBusy] = useState(false)
   const [demoError, setDemoError] = useState<string | null>(null)
+  const [providerStatus, setProviderStatus] = useState<ProviderStatus | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    getProviderStatus()
+      .then((status) => {
+        if (!cancelled) setProviderStatus(status)
+      })
+      .catch(() => {
+        // transient — the calls list still loads; status pill just stays hidden
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const refresh = useCallback(async () => {
     try {
@@ -127,7 +155,28 @@ export default function CallWorkspace({ onBack, onStartDemo }: CallWorkspaceProp
       {/* Page header */}
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <Eyebrow>Post-call intelligence</Eyebrow>
+          <div className="flex flex-wrap items-center gap-3">
+            <Eyebrow>Post-call intelligence</Eyebrow>
+            {providerStatus && (
+              <span
+                className={cx(
+                  'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-wider',
+                  providerStatus.mode === 'live'
+                    ? 'border-sentiment/25 bg-sentiment/[0.06] text-sentiment'
+                    : 'border-rule-strong bg-panel text-subtle',
+                )}
+              >
+                <Dot
+                  className={cx(
+                    providerStatus.mode === 'live' ? 'bg-sentiment' : 'bg-ash',
+                  )}
+                />
+                {providerStatus.mode === 'live'
+                  ? 'Live analysis available'
+                  : 'Sample mode'}
+              </span>
+            )}
+          </div>
           <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
             Calls
           </h1>
@@ -283,7 +332,7 @@ export default function CallWorkspace({ onBack, onStartDemo }: CallWorkspaceProp
                         <span className="block truncate font-mono text-sm font-medium text-ink">
                           {call.original_filename}
                         </span>
-                        {isSampleCall(call.id) && <SampleBadge />}
+                        <SourceBadge source={call.source} />
                       </span>
                       <span className="mt-1 block text-xs text-subtle">
                         {formatDate(call.created_at)}

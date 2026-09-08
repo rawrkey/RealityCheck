@@ -60,6 +60,13 @@ def chat_structured(
         "post_processing_steps": [{"type": "json-repair"}],
     }
 
+    # Cross-provider fallback: the Gateway retries on the configured backup if
+    # the primary model fails. The fallback inherits the structured-output
+    # request untouched. An empty string disables it.
+    fallback_model = settings.assemblyai_llm_fallback_model.strip()
+    if fallback_model:
+        payload["fallbacks"] = [{"model": fallback_model}]
+
     try:
         with httpx.Client(timeout=httpx.Timeout(180.0)) as client:
             response = client.post(url, headers=headers, json=payload)
