@@ -23,6 +23,18 @@ export function speakerLabel(speaker: Speaker): string {
   return speaker.replace('SPEAKER_', 'Speaker ')
 }
 
+const SPEAKER_DOTS: Record<Speaker, string> = {
+  SPEAKER_A: 'bg-info',
+  SPEAKER_B: 'bg-warning',
+  SPEAKER_C: 'bg-sentiment',
+  SPEAKER_D: 'bg-caution',
+}
+
+/** Restrained speaker differentiation: a small token-coloured dot, not a bubble. */
+export function speakerDotClass(speaker: Speaker): string {
+  return SPEAKER_DOTS[speaker] ?? SPEAKER_DOTS.SPEAKER_A
+}
+
 const LEVEL_STYLES: Record<ConfidenceLevel, string> = {
   high: 'bg-emerald-500/20 text-emerald-300',
   medium: 'bg-amber-500/20 text-amber-300',
@@ -114,4 +126,23 @@ export function formatBytes(bytes: number): string {
     unit += 1
   }
   return `${value >= 10 ? Math.round(value) : value.toFixed(1)} ${units[unit]}`
+}
+
+/** "12m 04s" style duration from seconds (web formatDuration previously local). */
+export function formatDuration(seconds: number): string {
+  const total = Math.round(seconds)
+  const m = Math.floor(total / 60)
+  const s = total % 60
+  return `${m}m ${String(s).padStart(2, '0')}s`
+}
+
+/** "00:04" / "01:12" / "1:02:03" clock reading from a UTC timestamp in ms. */
+export function formatTimestampMs(startMs: number): string {
+  const total = Math.max(0, Math.floor(startMs / 1000))
+  const h = Math.floor(total / 3600)
+  const m = Math.floor((total % 3600) / 60)
+  const s = total % 60
+  const mm = String(m).padStart(2, '0')
+  const ss = String(s).padStart(2, '0')
+  return h > 0 ? `${h}:${mm}:${ss}` : `${m}:${ss}`
 }

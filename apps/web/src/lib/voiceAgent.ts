@@ -10,12 +10,25 @@ export type VoiceAgentLogEntry =
   | { kind: 'tool'; text: string }
   | { kind: 'system'; text: string }
 
+/**
+ * Coarse interaction phase observed from the Voice Agent events. Emitted in
+ * addition to (never instead of) the existing callbacks, purely as an
+ * optional UI signal; the WebSocket protocol and message flow are untouched.
+ */
+export type VoiceAgentPhase =
+  | 'listening'
+  | 'thinking'
+  | 'speaking'
+  | 'tool'
+  | 'completed'
+
 export type VoiceAgentCallbacks = {
   onLog: (entry: VoiceAgentLogEntry) => void
   onStatus?: (status: string) => void
   onError?: (message: string) => void
   onEnded?: () => void
   onToolCall?: (call: VoiceAgentToolCall) => Promise<string>
+  onPhase?: (phase: VoiceAgentPhase) => void
 }
 
 const READY_TIMEOUT_MS = 15_000
@@ -134,12 +147,17 @@ export class VoiceAgentClient {
     switch (event.type) {
       case 'transcript.user':
         this.callbacks.onLog?.({ kind: 'rep', text: String(event.text ?? '') })
+        this.callbacks.onPhase?.('thinking')
         break
       case 'transcript.agent':
         this.callbacks.onLog?.({ kind: 'agent', text: String(event.text ?? '') })
         break
       case 'input.speech.started':
+        this.callbacks.onPhase?.('listening')
+        this.lastEvent = 'turn'
+        break
       case 'reply.started':
+        this.callbacks.onPhase?.('speaking')
         this.lastEvent = 'turn'
         break
       case 'reply.done':
@@ -148,13 +166,16 @@ export class VoiceAgentClient {
         } else {
           this.lastEvent = 'idle'
           this.flushTools()
+          this.callbacks.onPhase?.('listening')
         }
         break
       case 'tool.call':
+        this.callbacks.onPhase?.('tool')
         void this.handleToolCall(event as unknown as VoiceAgentToolCall)
         break
       case 'session.ended':
         this.ended = true
+        this.callbacks.onPhase?.('completed')
         break
       default:
         break
@@ -199,6 +220,7 @@ export class VoiceAgentClient {
       )
     }
     this.pendingTools = []
+    this.callbacks.onPhase?.('listening')
   }
 
   async startMic(): Promise<void> {

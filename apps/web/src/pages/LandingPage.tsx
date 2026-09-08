@@ -52,9 +52,15 @@ export default function LandingPage({ onStartDemo }: { onStartDemo: () => void }
       {/* HERO */}
       <section className="border-b border-rule">
         <div className="mx-auto max-w-5xl px-4 py-24 sm:px-6 md:py-32">
-          <p className="animate-rise-in font-mono text-[11px] font-semibold uppercase tracking-[0.22em] text-subtle">
-            RealityCheck / Post-call intelligence
-          </p>
+          <div className="animate-rise-in flex items-center gap-3">
+            <span
+              className="h-[3px] w-[3px] rotate-45 bg-warning"
+              aria-hidden="true"
+            />
+            <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.22em] text-subtle">
+              RealityCheck / Post-call intelligence
+            </p>
+          </div>
           <h1
             className="mt-7 max-w-3xl animate-rise-in text-4xl font-semibold leading-[1.05] tracking-[-0.03em] text-white sm:text-6xl lg:text-7xl"
             style={{ animationDelay: '70ms' }}

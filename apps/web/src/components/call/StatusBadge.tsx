@@ -1,37 +1,29 @@
 import type { CallStatus } from '../../lib/types'
+import { StatusPill } from './StatusPill'
 
 type StatusBadgeProps = {
   status: CallStatus
   errorMessage?: string | null
 }
 
-const STYLES: Record<CallStatus, string> = {
-  uploaded: 'bg-slate-500/20 text-slate-300',
-  transcribing: 'bg-sky-500/20 text-sky-300',
-  analyzing: 'bg-purple-500/20 text-purple-300',
-  ready: 'bg-emerald-500/20 text-emerald-300',
-  failed: 'bg-rose-500/20 text-rose-300',
-}
-
 export function StatusBadge({ status, errorMessage }: StatusBadgeProps) {
   return (
-    <section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
+    <section className="rounded-lg border border-rule bg-panel p-5">
       <div className="flex flex-wrap items-center gap-3">
-        <h2 className="text-lg font-semibold text-white">Processing Status</h2>
-        <span
-          className={`rounded-full px-3 py-1 text-xs font-semibold ${STYLES[status]}`}
-        >
-          {status}
-        </span>
+        <h2 className="text-sm font-semibold text-ink">Processing Status</h2>
+        <StatusPill status={status} />
       </div>
 
       {status === 'ready' && (
-        <p className="mt-2 text-sm text-slate-400">
+        <p className="mt-2 text-sm leading-relaxed text-muted">
           The call was transcribed and ground-truth analysis completed.
         </p>
       )}
       {status === 'failed' && errorMessage && (
-        <p className="mt-2 rounded-lg border border-rose-500/40 bg-rose-500/10 px-4 py-2 text-sm text-rose-300">
+        <p
+          className="mt-2 rounded-md border border-caution/30 bg-caution/[0.06] px-4 py-2 text-sm leading-relaxed text-caution"
+          role="alert"
+        >
           {errorMessage}
         </p>
       )}
