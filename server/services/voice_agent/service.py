@@ -40,7 +40,7 @@ def mint_voice_agent_token(*, expires_in_seconds: int | None = None) -> str:
     ttl = expires_in_seconds or settings.voice_agent_token_ttl_seconds
     url = settings.voice_agent_base_url.rstrip("/") + TOKEN_PATH
     headers = {
-        "Authorization": api_key,
+        "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
     params = {"expires_in_seconds": ttl}

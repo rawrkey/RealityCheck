@@ -3,12 +3,13 @@ import { CallHeader } from '../components/call/CallHeader'
 import { ClaimAlignmentView } from '../components/voice/ClaimAlignmentView'
 import { VoiceSession } from '../components/voice/VoiceSession'
 import type { VoiceSessionState } from '../components/voice/VoiceSession'
-import { Button, ButtonLink, Skeleton } from '../components/ui'
+import { Button, ButtonLink, Elapsed, Skeleton } from '../components/ui'
 import {
   getCall,
   getDebrief,
   getInterrogationConfig,
   getInterrogationSession,
+  getVoiceAvailability,
   startInterrogation,
   submitDebrief,
 } from '../lib/api'
@@ -66,12 +67,23 @@ export default function DebriefPage({
     started: false,
     answered: 0,
   })
+  const [voiceAvailable, setVoiceAvailable] = useState<boolean | null>(null)
 
   const load = useCallback(async (): Promise<void> => {
     try {
       const loadedCall = await getCall(callId)
       setCall(loadedCall)
       setError(null)
+
+      let hasVoice = true
+      try {
+        const availability = await getVoiceAvailability(callId)
+        hasVoice = availability.available
+      } catch {
+        hasVoice = false
+      }
+      setVoiceAvailable(hasVoice)
+
       try {
         const loadedSession = await getInterrogationSession(callId)
         setSession(loadedSession)
@@ -86,10 +98,15 @@ export default function DebriefPage({
       } catch {
         setPhase('idle')
       }
-      try {
-        const loadedConfig = await getInterrogationConfig(callId)
-        setConfig(loadedConfig)
-      } catch {
+
+      if (hasVoice) {
+        try {
+          const loadedConfig = await getInterrogationConfig(callId)
+          setConfig(loadedConfig)
+        } catch {
+          setConfig(null)
+        }
+      } else {
         setConfig(null)
       }
     } catch (loadError) {
@@ -131,10 +148,14 @@ export default function DebriefPage({
       setSession(created)
       setVoice({ started: false, answered: 0 })
       setPhase('active')
-      try {
-        const loadedConfig = await getInterrogationConfig(callId)
-        setConfig(loadedConfig)
-      } catch {
+      if (voiceAvailable) {
+        try {
+          const loadedConfig = await getInterrogationConfig(callId)
+          setConfig(loadedConfig)
+        } catch {
+          setConfig(null)
+        }
+      } else {
         setConfig(null)
       }
     } catch (beginError) {
@@ -226,7 +247,7 @@ export default function DebriefPage({
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-info opacity-60" />
               <span className="relative inline-flex size-2.5 rounded-full bg-info" />
             </span>
-            <div>
+            <div className="min-w-0 flex-1">
               <p className="text-sm font-medium text-ink">
                 This call is still {callStatusMeta(call.status).label.toLowerCase()}.
               </p>
@@ -234,6 +255,7 @@ export default function DebriefPage({
                 The voice debrief opens once the call is transcribed and analyzed.
               </p>
             </div>
+            <Elapsed fromIso={call.created_at} className="text-xs" />
           </div>
         )}
 
@@ -269,7 +291,11 @@ export default function DebriefPage({
             <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_300px]">
               <div className="min-w-0">
                 {phase === 'idle' && (
-                  <BeginCard onBegin={begin} busy={false} />
+                  <BeginCard
+                    onBegin={begin}
+                    busy={false}
+                    voiceAvailable={voiceAvailable}
+                  />
                 )}
                 {phase === 'active' && (
                   <VoiceSession
@@ -400,25 +426,35 @@ function PageEyebrow({
   )
 }
 
-function BeginCard({ onBegin, busy }: { onBegin: () => void; busy: boolean }) {
+function BeginCard({
+  onBegin,
+  busy,
+  voiceAvailable,
+}: {
+  onBegin: () => void
+  busy: boolean
+  voiceAvailable: boolean | null
+}) {
+  const voice = voiceAvailable === true
   return (
     <div className="rounded-lg border border-rule bg-vessel p-5 sm:p-7 animate-fade-cross">
       <p className="font-mono text-[11px] font-semibold uppercase tracking-widest text-subtle">
         <span className="mr-2 text-faint">Step 02</span>
-        Ready when you are
+        {voice ? 'Voice debrief' : 'Typed debrief'}
       </p>
       <p className="mt-3 max-w-xl text-sm leading-relaxed text-muted">
-        A voice agent greets the rep, then works through the four dimensions — the
-        buyer's main objection, the real decision-maker, deal interest and risk,
-        and the agreed next step. Specific claims are checked against the call
-        transcript as you answer.
+        {voice
+          ? 'A voice agent greets the rep, then works through the four dimensions — the buyer\u2019s main objection, the real decision-maker, deal interest and risk, and the agreed next step.'
+          : 'Live voice isn\u2019t available in this environment. The same four questions are asked in writing, and the debrief is processed exactly like a live session.'}
       </p>
       <div className="mt-6 flex flex-wrap items-center gap-4">
         <Button size="lg" onClick={onBegin} loading={busy}>
-          Begin voice debrief
+          {voice ? 'Begin voice debrief' : 'Continue with typed responses'}
         </Button>
         <p className="text-xs text-subtle">
-          You'll be asked to allow microphone access.
+          {voice
+            ? 'You\u2019ll be asked to allow microphone access.'
+            : 'Your answers are checked against the call transcript.'}
         </p>
       </div>
     </div>

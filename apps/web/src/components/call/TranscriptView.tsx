@@ -289,7 +289,6 @@ function UtteranceRow({
               {role.role} · {pct(role.confidence)}
             </span>
           )}
-          <span className="font-mono text-[10px] text-faint">{utterance.id}</span>
         </div>
         <p className="mt-1.5 text-[15px] leading-relaxed text-ink">
           <HighlightedText text={utterance.text} query={query} />

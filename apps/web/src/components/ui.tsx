@@ -1,5 +1,7 @@
+import { useEffect, useState } from 'react'
 import type { AnchorHTMLAttributes, ButtonHTMLAttributes, ReactNode } from 'react'
 import { cx } from '../lib/cx'
+import { formatElapsed } from '../lib/ui'
 import { Link } from './Link'
 
 /* Tiny headless primitives — deliberately not a component library. */
@@ -159,5 +161,39 @@ export function Skeleton({ className }: { className?: string }) {
     >
       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-rule/40 to-transparent animate-shimmer" />
     </div>
+  )
+}
+
+/**
+ * Live elapsed-time readout ("Elapsed 00:42") that ticks once per second
+ * relative to a fixed start ISO timestamp. Purely presentational.
+ */
+export function Elapsed({
+  fromIso,
+  label = 'Elapsed',
+  className,
+}: {
+  fromIso: string
+  label?: string
+  className?: string
+}) {
+  const [now, setNow] = useState(() => Date.now())
+
+  useEffect(() => {
+    setNow(Date.now())
+    const timer = window.setInterval(() => setNow(Date.now()), 1000)
+    return () => window.clearInterval(timer)
+  }, [fromIso])
+
+  const startedAt = new Date(fromIso).getTime()
+  const seconds = Number.isNaN(startedAt)
+    ? 0
+    : Math.max(0, (now - startedAt) / 1000)
+
+  return (
+    <span className={cx('inline-flex items-center gap-1.5 font-mono tabular-nums', className)}>
+      <span className="text-subtle">{label}</span>
+      <span className="text-muted">{formatElapsed(seconds)}</span>
+    </span>
   )
 }

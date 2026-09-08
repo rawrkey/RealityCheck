@@ -7,6 +7,7 @@ from fastapi import APIRouter, File, HTTPException, UploadFile
 
 from server.services.calls import pipeline
 from server.services.evidence import search_evidence
+from server.services.sample_call import ensure_sample_call
 from server.services.storage import StorageError, get_call_store
 from shared.schemas.call import CallRecord, CallSummary
 from shared.schemas.evidence import EvidenceItem
@@ -46,6 +47,17 @@ def upload_call(file: UploadFile | None = File(None)) -> CallRecord:
 def list_calls() -> list[CallSummary]:
     """List processed calls (lightweight metadata)."""
     return get_call_store().list_calls()
+
+
+@router.post("/demo", response_model=CallRecord)
+def load_sample_call() -> CallRecord:
+    """Seed the demo sample call (idempotent) and return it fully analyzed.
+
+    The sample is deterministic local data, explicitly labeled as a sample, and
+    requires no external processing — it exists so the cold-start demo has
+    something ready to run the moment the operator lands.
+    """
+    return ensure_sample_call(get_call_store())
 
 
 @router.get("/{call_id}", response_model=CallRecord)

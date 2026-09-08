@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { UploadCall } from '../components/call/UploadCall'
 import { StatusPill } from '../components/call/StatusPill'
-import { Button, Dot, Eyebrow, Panel } from '../components/ui'
+import { Button, Dot, Elapsed, Eyebrow, Panel } from '../components/ui'
 import { cx } from '../lib/cx'
 import { navigate } from '../lib/router'
-import { listCalls } from '../lib/api'
+import { isSampleCall, listCalls } from '../lib/api'
 import type { CallRecord, CallSummary } from '../lib/types'
 import { callStatusMeta, formatDate } from '../lib/ui'
 
@@ -18,16 +18,30 @@ function toSummary(call: CallRecord): CallSummary {
   }
 }
 
-type CallWorkspaceProps = {
-  onBack: () => void
+function SampleBadge() {
+  return (
+    <span className="inline-flex items-center rounded-full border border-rule-strong bg-panel px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-subtle">
+      Sample
+    </span>
+  )
 }
 
-export default function CallWorkspace({ onBack }: CallWorkspaceProps) {
+type CallWorkspaceProps = {
+  onBack: () => void
+  onStartDemo: () => Promise<void>
+}
+
+export default function CallWorkspace({ onBack, onStartDemo }: CallWorkspaceProps) {
   const inputRef = useRef<HTMLInputElement | null>(null)
   const [calls, setCalls] = useState<CallSummary[] | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [selected, setSelected] = useState<CallSummary | null>(null)
-  const [flash, setFlash] = useState<string | null>(null)
+  const [flash, setFlash] = useState<{
+    filename: string
+    failed?: boolean
+  } | null>(null)
+  const [demoBusy, setDemoBusy] = useState(false)
+  const [demoError, setDemoError] = useState<string | null>(null)
 
   const refresh = useCallback(async () => {
     try {
@@ -88,7 +102,24 @@ export default function CallWorkspace({ onBack }: CallWorkspaceProps) {
         ? [toSummary(call), ...prev.filter((c) => c.id !== call.id)]
         : [toSummary(call)],
     )
-    setFlash(call.original_filename)
+    setFlash({
+      filename: call.original_filename,
+      failed: call.status === 'failed',
+    })
+  }
+
+  async function handleStartDemo() {
+    setDemoBusy(true)
+    setDemoError(null)
+    try {
+      await onStartDemo()
+    } catch (error) {
+      setDemoError(
+        error instanceof Error ? error.message : 'Could not load the sample call.',
+      )
+    } finally {
+      setDemoBusy(false)
+    }
   }
 
   return (
@@ -113,6 +144,9 @@ export default function CallWorkspace({ onBack }: CallWorkspaceProps) {
           >
             Home
           </button>
+          <Button variant="secondary" onClick={() => void handleStartDemo()} loading={demoBusy}>
+            Load sample call
+          </Button>
           <Button onClick={() => inputRef.current?.click()}>
             Analyze a call
             <span className="text-[10px] leading-none opacity-70" aria-hidden="true">
@@ -122,19 +156,48 @@ export default function CallWorkspace({ onBack }: CallWorkspaceProps) {
         </div>
       </div>
 
+      {demoError && (
+        <div
+          className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-caution/30 bg-caution/[0.06] px-4 py-3"
+          role="alert"
+        >
+          <p className="text-sm text-caution">{demoError}</p>
+          <button
+            type="button"
+            onClick={() => void handleStartDemo()}
+            className="text-sm font-medium text-muted transition-colors hover:text-ink"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
       {/* Upload */}
       <UploadCall onProcessed={handleProcessed} inputRef={inputRef} />
 
       {/* Success flash */}
       {flash && (
         <div
-          className="flex items-center gap-2.5 rounded-md border border-sentiment/25 bg-sentiment/[0.06] px-4 py-3"
-          role="status"
+          className={cx(
+            'flex items-center gap-2.5 rounded-md border px-4 py-3',
+            flash.failed
+              ? 'border-caution/30 bg-caution/[0.06]'
+              : 'border-sentiment/25 bg-sentiment/[0.06]',
+          )}
+          role={flash.failed ? 'alert' : 'status'}
         >
-          <Dot className="bg-sentiment" />
-          <p className="text-sm text-sentiment">
-            Call ready — <span className="font-medium">{flash}</span> is in your list.
-          </p>
+          <Dot className={flash.failed ? 'bg-caution' : 'bg-sentiment'} />
+          {flash.failed ? (
+            <p className="text-sm text-caution">
+              Call failed — <span className="font-medium">{flash.filename}</span> wasn't
+              processed. See its details below.
+            </p>
+          ) : (
+            <p className="text-sm text-sentiment">
+              Call ready — <span className="font-medium">{flash.filename}</span> is in your
+              list.
+            </p>
+          )}
         </div>
       )}
 
@@ -168,19 +231,28 @@ export default function CallWorkspace({ onBack }: CallWorkspaceProps) {
             No calls yet
           </p>
           <h2 className="mx-auto mt-4 max-w-md text-xl font-semibold tracking-tight text-white">
-            Start with a real call
+            Start with the sample call — or your own recording
           </h2>
           <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted">
-            Drop a recording above — or upload your first one now. RealityCheck transcribes
-            it and prepares the ground truth for the debrief.
+            Explore the full flow against a bundled, pre-analyzed call, or upload a
+            recording and let RealityCheck transcribe, analyze, and prepare the debrief.
           </p>
-          <button
-            type="button"
-            onClick={() => inputRef.current?.click()}
-            className="mt-6 inline-flex items-center gap-2 rounded-md bg-ink px-5 py-2.5 text-sm font-semibold text-canvas transition-all hover:bg-white/95 active:scale-[0.98]"
-          >
-            Analyze a call
-          </button>
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+            <Button onClick={() => void handleStartDemo()} loading={demoBusy}>
+              Load sample call
+              <span className="text-[12px] leading-none opacity-70" aria-hidden="true">
+                →
+              </span>
+            </Button>
+            <Button variant="secondary" onClick={() => inputRef.current?.click()}>
+              Analyze a call
+            </Button>
+          </div>
+          {demoError && (
+            <p className="mt-4 text-sm text-caution" role="alert">
+              {demoError}
+            </p>
+          )}
         </Panel>
       ) : (
         <section aria-label="Calls">
@@ -207,8 +279,11 @@ export default function CallWorkspace({ onBack }: CallWorkspaceProps) {
                     )}
                   >
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate font-mono text-sm font-medium text-ink">
-                        {call.original_filename}
+                      <span className="flex items-center gap-2">
+                        <span className="block truncate font-mono text-sm font-medium text-ink">
+                          {call.original_filename}
+                        </span>
+                        {isSampleCall(call.id) && <SampleBadge />}
                       </span>
                       <span className="mt-1 block text-xs text-subtle">
                         {formatDate(call.created_at)}
@@ -262,7 +337,7 @@ export default function CallWorkspace({ onBack }: CallWorkspaceProps) {
                             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-info opacity-60" />
                             <span className="relative inline-flex size-2.5 rounded-full bg-info" />
                           </span>
-                          <div>
+                          <div className="min-w-0 flex-1">
                             <p className="text-sm font-medium text-ink">
                               This call is still{' '}
                               {callStatusMeta(call.status).label.toLowerCase()}.
@@ -271,6 +346,7 @@ export default function CallWorkspace({ onBack }: CallWorkspaceProps) {
                               The list updates automatically once processing finishes.
                             </p>
                           </div>
+                          <Elapsed fromIso={call.created_at} className="text-xs" />
                         </div>
                       )}
                     </div>

@@ -9,10 +9,14 @@ import type {
   InterrogationSession,
   InterrogationMessage,
   Transcript,
+  VoiceAvailability,
 } from './types'
 
 export const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000'
+
+/** Deterministic cold-start demo call seeded by POST /api/calls/demo. */
+export const SAMPLE_CALL_ID = 'demo-nova-onboarding'
 
 async function handle<T>(res: Response): Promise<T> {
   if (!res.ok) {
@@ -30,7 +34,9 @@ async function handle<T>(res: Response): Promise<T> {
     } catch {
       // ignore non-JSON error bodies
     }
-    throw new Error(detail)
+    const error = new Error(detail) as Error & { status?: number }
+    error.status = res.status
+    throw error
   }
   return res.json() as Promise<T>
 }
@@ -51,6 +57,18 @@ export async function uploadCall(file: File): Promise<CallRecord> {
 
 export async function listCalls(): Promise<CallSummary[]> {
   return handle<CallSummary[]>(await fetch(`${API_BASE_URL}/api/calls`))
+}
+
+/** Seed the deterministic demo call and return it as the current call. */
+export async function loadSampleCall(): Promise<CallRecord> {
+  return handle<CallRecord>(
+    await fetch(`${API_BASE_URL}/api/calls/demo`, { method: 'POST' }),
+  )
+}
+
+/** True when the given call id / record is the bundled sample call. */
+export function isSampleCall(callId: string): boolean {
+  return callId === SAMPLE_CALL_ID
 }
 
 export async function getCall(callId: string): Promise<CallRecord> {
@@ -124,6 +142,13 @@ export async function getAlignments(callId: string): Promise<ClaimAlignment[]> {
 
 export async function getReality(callId: string): Promise<DealReality> {
   return handle<DealReality>(await fetch(`${API_BASE_URL}/api/calls/${callId}/reality`))
+}
+
+/** Probe whether a live voice debrief is available for a call. */
+export async function getVoiceAvailability(callId: string): Promise<VoiceAvailability> {
+  return handle<VoiceAvailability>(
+    await fetch(`${API_BASE_URL}/api/calls/${callId}/interrogation/voice`),
+  )
 }
 
 export async function buildReality(callId: string): Promise<DealReality> {

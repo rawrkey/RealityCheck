@@ -4,7 +4,7 @@ import { uploadCall } from '../../lib/api'
 import { formatBytes } from '../../lib/ui'
 import type { CallRecord } from '../../lib/types'
 import { cx } from '../../lib/cx'
-import { Eyebrow } from '../ui'
+import { Elapsed, Eyebrow } from '../ui'
 
 const ALLOWED_AUDIO_EXTENSIONS = [
   'WAV',
@@ -34,6 +34,7 @@ export function UploadCall({ onProcessed, inputRef }: UploadCallProps) {
   const [phase, setPhase] = useState<UploadPhase>('idle')
   const [error, setError] = useState<string | null>(null)
   const [dragging, setDragging] = useState(false)
+  const [startedAt, setStartedAt] = useState<string | null>(null)
 
   function pickFile(next: File | undefined | null) {
     if (!next) return
@@ -67,6 +68,7 @@ export function UploadCall({ onProcessed, inputRef }: UploadCallProps) {
     if (!file || phase === 'uploading') return
     setPhase('uploading')
     setError(null)
+    setStartedAt(new Date().toISOString())
     try {
       const call = await uploadCall(file)
       onProcessed(call)
@@ -120,12 +122,15 @@ export function UploadCall({ onProcessed, inputRef }: UploadCallProps) {
               <span className="relative inline-flex size-3 rounded-full bg-info" />
             </span>
             <div>
-              <p className="text-sm font-medium text-info">Uploading and analyzing…</p>
+              <p className="text-sm font-medium text-info">
+                Uploading, transcribing, and analyzing…
+              </p>
               <p className="mt-1 text-xs text-subtle">
-                Transcription and ground-truth analysis run in a single pass. The call
-                appears in your list once it's ready.
+                This can take a minute or two on longer recordings. The call appears in
+                your list once it's ready.
               </p>
             </div>
+            {startedAt && <Elapsed fromIso={startedAt} className="text-xs" />}
           </div>
         ) : file ? (
           <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-between sm:text-left">

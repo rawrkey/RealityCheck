@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     assemblyai_llm_max_tokens: int = 6000
 
     voice_agent_base_url: str = "https://agents.assemblyai.com"
-    voice_agent_ws_url: str = "wss://agents.assemblyai.com/voice-agent"
+    voice_agent_ws_url: str = "wss://agents.assemblyai.com/v1/ws"
     voice_agent_token_ttl_seconds: int = 300
 
     call_storage_dir: str = "data/demo/calls"

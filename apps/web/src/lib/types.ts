@@ -179,6 +179,11 @@ export interface CallRecord {
   error_message: string | null
 }
 
+export interface VoiceAvailability {
+  available: boolean
+  reason: string | null
+}
+
 export interface CallSummary {
   id: string
   original_filename: string

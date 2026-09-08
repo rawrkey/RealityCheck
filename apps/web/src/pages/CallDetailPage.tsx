@@ -5,7 +5,7 @@ import { CallHeader } from '../components/call/CallHeader'
 import { TranscriptView } from '../components/call/TranscriptView'
 import { GroundTruthView } from '../components/call/GroundTruthView'
 import { callStatusMeta } from '../lib/ui'
-import { Skeleton } from '../components/ui'
+import { Elapsed, Skeleton } from '../components/ui'
 
 type CallDetailPageProps = {
   callId: string
@@ -140,13 +140,13 @@ export default function CallDetailPage({
           </div>
         )}
 
-        {pending && (
+        {call && pending && (
           <div className="flex items-center gap-3 rounded-md border border-rule bg-vessel/40 px-4 py-5">
             <span className="relative flex size-2.5">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-info opacity-60" />
               <span className="relative inline-flex size-2.5 rounded-full bg-info" />
             </span>
-            <div>
+            <div className="min-w-0 flex-1">
               <p className="text-sm font-medium text-ink">
                 This call is still {callStatusMeta(call.status).label.toLowerCase()}.
               </p>
@@ -154,6 +154,7 @@ export default function CallDetailPage({
                 Transcript and ground truth appear here once processing finishes.
               </p>
             </div>
+            <Elapsed fromIso={call.created_at} className="text-xs" />
           </div>
         )}
 

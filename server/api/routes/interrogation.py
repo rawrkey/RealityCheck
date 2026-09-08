@@ -69,6 +69,34 @@ class ToolResult(BaseModel):
     )
 
 
+class VoiceAvailability(BaseModel):
+    """Whether a live voice debrief is possible for a call, and why not."""
+
+    available: bool
+    reason: str | None = Field(
+        default=None,
+        description="Human-readable explanation when voice is unavailable.",
+    )
+
+
+@router.get("/{call_id}/interrogation/voice", response_model=VoiceAvailability)
+def voice_availability(call_id: str) -> VoiceAvailability:
+    """Report whether a live voice debrief is available for a call.
+
+    Voice needs an AssemblyAI API key configured server-side. This is a pure
+    capability probe (no token is minted) so the frontend can honestly present
+    either a voice debrief or the typed fallback before the rep commits.
+    """
+    _load_or_404(call_id)
+    if settings.assemblyai_api_key:
+        return VoiceAvailability(available=True, reason=None)
+    return VoiceAvailability(
+        available=False,
+        reason="Live voice isn't available in this environment "
+        "(no ASSEMBLYAI_API_KEY is configured).",
+    )
+
+
 @router.post(
     "/{call_id}/interrogation/session",
     response_model=InterrogationSession,

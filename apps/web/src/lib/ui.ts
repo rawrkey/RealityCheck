@@ -146,3 +146,8 @@ export function formatTimestampMs(startMs: number): string {
   const ss = String(s).padStart(2, '0')
   return h > 0 ? `${h}:${mm}:${ss}` : `${m}:${ss}`
 }
+
+/** "00:42" / "01:02:03" ticking elapsed-time reading from seconds elapsed. */
+export function formatElapsed(elapsedSeconds: number): string {
+  return formatTimestampMs(Math.max(0, elapsedSeconds) * 1000)
+}

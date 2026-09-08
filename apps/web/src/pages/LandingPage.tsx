@@ -1,4 +1,5 @@
-import { ButtonLink, Dot, Eyebrow, Panel } from '../components/ui'
+import { useState } from 'react'
+import { Button, Dot, Eyebrow, Panel } from '../components/ui'
 
 const FLOW_STEPS = [
   {
@@ -46,7 +47,22 @@ const DIMENSIONS = [
   },
 ]
 
-export default function LandingPage({ onStartDemo }: { onStartDemo: () => void }) {
+export default function LandingPage({ onStartDemo }: { onStartDemo: () => Promise<void> }) {
+  const [demoBusy, setDemoBusy] = useState(false)
+  const [demoError, setDemoError] = useState<string | null>(null)
+
+  const runDemo = async () => {
+    setDemoBusy(true)
+    setDemoError(null)
+    try {
+      await onStartDemo()
+    } catch (error) {
+      setDemoError(error instanceof Error ? error.message : 'Could not load the sample call.')
+    } finally {
+      setDemoBusy(false)
+    }
+  }
+
   return (
     <main className="pb-24">
       {/* HERO */}
@@ -79,12 +95,12 @@ export default function LandingPage({ onStartDemo }: { onStartDemo: () => void }
             className="mt-11 flex flex-wrap items-center gap-5 animate-rise-in"
             style={{ animationDelay: '210ms' }}
           >
-            <ButtonLink to="/calls" size="lg" onClick={onStartDemo}>
-              Start a Demo
+            <Button size="lg" onClick={runDemo} loading={demoBusy}>
+              {demoError ? 'Try the demo again' : 'Start a Demo'}
               <span className="text-[12px] leading-none opacity-70" aria-hidden="true">
                 →
               </span>
-            </ButtonLink>
+            </Button>
             <button
               type="button"
               onClick={() => {
@@ -100,6 +116,11 @@ export default function LandingPage({ onStartDemo }: { onStartDemo: () => void }
               See the four questions
             </button>
           </div>
+          {demoError && (
+            <p className="mt-4 text-sm text-caution" role="alert">
+              {demoError}
+            </p>
+          )}
         </div>
       </section>
 
@@ -230,13 +251,18 @@ export default function LandingPage({ onStartDemo }: { onStartDemo: () => void }
             needs.
           </p>
           <div className="mt-9">
-            <ButtonLink to="/calls" size="lg" onClick={onStartDemo}>
-              Analyze a call
+            <Button size="lg" onClick={runDemo} loading={demoBusy}>
+              {demoError ? 'Try the demo again' : 'Analyze a call'}
               <span className="text-[12px] leading-none opacity-70" aria-hidden="true">
                 →
               </span>
-            </ButtonLink>
+            </Button>
           </div>
+          {demoError && (
+            <p className="mt-4 text-sm text-caution" role="alert">
+              {demoError}
+            </p>
+          )}
         </div>
       </section>
     </main>

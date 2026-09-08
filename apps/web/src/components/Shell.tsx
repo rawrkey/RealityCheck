@@ -21,8 +21,7 @@ function Wordmark({ muted = false }: { muted?: boolean }) {
 
 export function Shell({ children }: { children: ReactNode }) {
   const pathname = useHashPath()
-  const inCalls =
-    pathname === '/calls' || pathname === '/' || pathname.startsWith('/calls/')
+  const inCalls = pathname === '/calls' || pathname.startsWith('/calls/')
 
   return (
     <div className="min-h-screen bg-canvas text-ink">

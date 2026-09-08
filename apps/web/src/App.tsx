@@ -4,9 +4,15 @@ import CallWorkspace from './pages/CallWorkspace'
 import CallDetailPage from './pages/CallDetailPage'
 import DebriefPage from './pages/DebriefPage'
 import RealityPage from './pages/RealityPage'
+import { loadSampleCall } from './lib/api'
 import { navigate, useHashPath } from './lib/router'
 
 const CALL_ROUTE = /^\/calls\/([^/]+)\/(debrief|reality|transcript|ground-truth)$/
+
+async function handleStartDemo() {
+  const call = await loadSampleCall()
+  navigate(`/calls/${call.id}/transcript`)
+}
 
 function App() {
   const path = useHashPath()
@@ -32,9 +38,9 @@ function App() {
     const callId = decodeURIComponent(match[1])
     page = <CallDetailPage callId={callId} section="ground-truth" onBack={() => navigate('/calls')} />
   } else if (path === '/calls') {
-    page = <CallWorkspace onBack={() => navigate('/')} />
+    page = <CallWorkspace onBack={() => navigate('/')} onStartDemo={handleStartDemo} />
   } else {
-    page = <LandingPage onStartDemo={() => navigate('/calls')} />
+    page = <LandingPage onStartDemo={handleStartDemo} />
   }
 
   return <Shell>{page}</Shell>

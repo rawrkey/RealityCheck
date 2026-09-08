@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { CallHeader } from '../components/call/CallHeader'
 import { EvidenceBox } from '../components/call/EvidenceBox'
-import { ButtonLink, Dot, Eyebrow, Skeleton } from '../components/ui'
+import { ButtonLink, Dot, Elapsed, Eyebrow, Skeleton } from '../components/ui'
 import { buildReality, getCall, getDebrief, getReality } from '../lib/api'
 import type {
   AlignmentVerdict,
@@ -111,9 +111,11 @@ export default function RealityPage({ callId, onBack }: RealityPageProps) {
   const [reality, setReality] = useState<DealReality | null>(null)
   const [debrief, setDebrief] = useState<DebriefResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [debriefError, setDebriefError] = useState<string | null>(null)
 
   const load = useCallback(async (): Promise<void> => {
     setError(null)
+    setDebriefError(null)
     try {
       const loadedCall = await getCall(callId)
       setCall(loadedCall)
@@ -122,8 +124,17 @@ export default function RealityPage({ callId, onBack }: RealityPageProps) {
       let loadedDebrief: DebriefResponse | null = null
       try {
         loadedDebrief = await getDebrief(callId)
-      } catch {
-        loadedDebrief = null
+      } catch (debriefLoadError) {
+        const status = (debriefLoadError as { status?: number })?.status
+        if (status === 404) {
+          loadedDebrief = null
+        } else {
+          setDebriefError(
+            debriefLoadError instanceof Error
+              ? debriefLoadError.message
+              : String(debriefLoadError),
+          )
+        }
       }
 
       let loadedReality: DealReality | null = null
@@ -231,13 +242,13 @@ export default function RealityPage({ callId, onBack }: RealityPageProps) {
           </div>
         )}
 
-        {pending && (
+        {call && pending && (
           <div className="flex items-center gap-3 rounded-md border border-rule bg-vessel/40 px-4 py-5">
             <span className="relative flex size-2.5">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-info opacity-60" />
               <span className="relative inline-flex size-2.5 rounded-full bg-info" />
             </span>
-            <div>
+            <div className="min-w-0 flex-1">
               <p className="text-sm font-medium text-ink">
                 This call is still {callStatusMeta(call.status).label.toLowerCase()}.
               </p>
@@ -245,6 +256,7 @@ export default function RealityPage({ callId, onBack }: RealityPageProps) {
                 The Deal Reality opens once the call is transcribed and analyzed.
               </p>
             </div>
+            <Elapsed fromIso={call.created_at} className="text-xs" />
           </div>
         )}
 
@@ -266,9 +278,29 @@ export default function RealityPage({ callId, onBack }: RealityPageProps) {
               </div>
             )}
 
+            {debriefError && (
+              <div
+                className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-caution/30 bg-caution/[0.06] px-4 py-3 text-sm text-caution"
+                role="alert"
+              >
+                <span>The debrief couldn't be retrieved: {debriefError}</span>
+                <button
+                  type="button"
+                  onClick={() => void load()}
+                  className="shrink-0 text-xs font-medium text-muted transition-colors hover:text-ink"
+                >
+                  Retry
+                </button>
+              </div>
+            )}
+
             {!reality && !error && <RealitySkeleton />}
 
-            {reality && (
+            {reality && !debriefError && (
+              <RealityContent callId={callId} reality={reality} debrief={debrief} />
+            )}
+
+            {reality && debriefError && reality.total_count > 0 && (
               <RealityContent callId={callId} reality={reality} debrief={debrief} />
             )}
           </>

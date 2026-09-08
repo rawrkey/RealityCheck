@@ -159,7 +159,8 @@ def test_config_endpoint_returns_token_and_session(
     assert payload["session"]["session"]["greeting"]
 
 
-def test_config_fails_without_api_key(client, wired_interrogation) -> None:
+def test_config_fails_without_api_key(client, wired_interrogation, monkeypatch) -> None:
+    monkeypatch.setattr(f"{ROUTES}.settings.assemblyai_api_key", None)
     call_id = wired_interrogation["call_id"]
     client.post(f"/api/calls/{call_id}/interrogation/session")
     response = client.get(f"/api/calls/{call_id}/interrogation/config")
