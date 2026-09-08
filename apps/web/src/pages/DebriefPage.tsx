@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { Header } from '../components/Header'
 import { StatusBadge } from '../components/call/StatusBadge'
 import { ClaimAlignmentView } from '../components/voice/ClaimAlignmentView'
 import { VoiceSession } from '../components/voice/VoiceSession'
@@ -115,9 +114,7 @@ export default function DebriefPage({ callId, onBack, onReality }: DebriefPagePr
   }
 
   return (
-    <>
-      <Header />
-      <main className="mx-auto max-w-5xl space-y-6 px-6 py-10">
+    <main className="mx-auto max-w-5xl space-y-6 px-6 py-10">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold tracking-tight text-white">
             Voice Interrogation <span className="text-slate-500">· {callId}</span>
@@ -197,6 +194,5 @@ export default function DebriefPage({ callId, onBack, onReality }: DebriefPagePr
           </div>
         )}
       </main>
-    </>
   )
 }

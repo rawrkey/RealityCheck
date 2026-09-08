@@ -1,68 +1,36 @@
-import { useEffect, useState } from 'react'
+import { Shell } from './components/Shell'
 import LandingPage from './pages/LandingPage'
 import CallWorkspace from './pages/CallWorkspace'
 import DebriefPage from './pages/DebriefPage'
 import RealityPage from './pages/RealityPage'
-
-function useHashPath(): string {
-  const [path, setPath] = useState(() => (window.location.hash || '#/').slice(1))
-
-  useEffect(() => {
-    const onHashChange = () => setPath((window.location.hash || '#/').slice(1))
-    window.addEventListener('hashchange', onHashChange)
-    return () => window.removeEventListener('hashchange', onHashChange)
-  }, [])
-
-  return path
-}
+import { navigate, useHashPath } from './lib/router'
 
 const CALL_ROUTE = /^\/calls\/([^/]+)\/(debrief|reality)$/
 
 function App() {
   const path = useHashPath()
-  const [inWorkspace, setInWorkspace] = useState(false)
-
   const match = path.match(CALL_ROUTE)
+
+  let page
   if (match && match[2] === 'debrief') {
     const callId = decodeURIComponent(match[1])
-    return (
-      <div className="min-h-screen bg-slate-950 text-slate-100">
-        <DebriefPage
-          callId={callId}
-          onBack={() => {
-            window.location.hash = '#/'
-          }}
-          onReality={() => {
-            window.location.hash = `#/calls/${callId}/reality`
-          }}
-        />
-      </div>
+    page = (
+      <DebriefPage
+        callId={callId}
+        onBack={() => navigate('/calls')}
+        onReality={() => navigate(`/calls/${callId}/reality`)}
+      />
     )
-  }
-
-  if (match && match[2] === 'reality') {
+  } else if (match && match[2] === 'reality') {
     const callId = decodeURIComponent(match[1])
-    return (
-      <div className="min-h-screen bg-slate-950 text-slate-100">
-        <RealityPage
-          callId={callId}
-          onBack={() => {
-            window.location.hash = '#/'
-          }}
-        />
-      </div>
-    )
+    page = <RealityPage callId={callId} onBack={() => navigate('/calls')} />
+  } else if (path === '/calls') {
+    page = <CallWorkspace onBack={() => navigate('/')} />
+  } else {
+    page = <LandingPage onStartDemo={() => navigate('/calls')} />
   }
 
-  return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
-      {inWorkspace ? (
-        <CallWorkspace onBack={() => setInWorkspace(false)} />
-      ) : (
-        <LandingPage onStartDemo={() => setInWorkspace(true)} />
-      )}
-    </div>
-  )
+  return <Shell>{page}</Shell>
 }
 
 export default App

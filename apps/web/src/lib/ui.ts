@@ -1,5 +1,6 @@
 import type {
   AlignmentVerdict,
+  CallStatus,
   ConfidenceLevel,
   DealRiskLevel,
   InterrogationDimension,
@@ -76,4 +77,41 @@ export function dimensionLabel(dimension: InterrogationDimension | string): stri
 
 export function pct(confidence: number): string {
   return `${Math.round(confidence * 100)}%`
+}
+
+const CALL_STATUS_META: Record<
+  CallStatus,
+  { label: string; dot: string; text: string }
+> = {
+  uploaded: { label: 'Uploaded', dot: 'bg-subtle', text: 'text-muted' },
+  transcribing: { label: 'Transcribing', dot: 'bg-info', text: 'text-info' },
+  analyzing: { label: 'Analyzing', dot: 'bg-info animate-pulse', text: 'text-info' },
+  ready: { label: 'Ready', dot: 'bg-sentiment', text: 'text-sentiment' },
+  failed: { label: 'Failed', dot: 'bg-caution', text: 'text-caution' },
+}
+
+export function callStatusMeta(status: CallStatus) {
+  return CALL_STATUS_META[status] ?? CALL_STATUS_META.uploaded
+}
+
+export function formatDate(iso: string): string {
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return iso
+  return date.toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  })
+}
+
+export function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  const units = ['KB', 'MB', 'GB']
+  let value = bytes / 1024
+  let unit = 0
+  while (value >= 1024 && unit < units.length - 1) {
+    value /= 1024
+    unit += 1
+  }
+  return `${value >= 10 ? Math.round(value) : value.toFixed(1)} ${units[unit]}`
 }

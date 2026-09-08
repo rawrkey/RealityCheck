@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Header } from '../components/Header'
 import { StatusBadge } from '../components/call/StatusBadge'
 import { buildReality, getCall, getReality } from '../lib/api'
 import type { CallRecord, DealReality } from '../lib/types'
@@ -44,9 +43,7 @@ export default function RealityPage({ callId, onBack }: RealityPageProps) {
   }, [callId, loadReality])
 
   return (
-    <>
-      <Header />
-      <main className="mx-auto max-w-5xl space-y-6 px-6 py-10">
+    <main className="mx-auto max-w-5xl space-y-6 px-6 py-10">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold tracking-tight text-white">
             Deal Reality <span className="text-slate-500">· {callId}</span>
@@ -185,6 +182,5 @@ export default function RealityPage({ callId, onBack }: RealityPageProps) {
           </>
         )}
       </main>
-    </>
   )
 }
